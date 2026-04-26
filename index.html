@@ -311,19 +311,22 @@
         <select id="systemType" onchange="onSystemTypeChange()">
           <option value="l-bracket">L — кронштейн</option>
           <option value="reg-angle">Рег. угол наклона 15 - 30</option>
+          <option value="mini-rail">Мини-рельс</option>
         </select>
       </div>
 
-      <div class="form-divider"></div>
-      <div class="section-label">Параметры системы</div>
+      <div id="systemParamsBlock">
+        <div class="form-divider"></div>
+        <div class="section-label">Параметры системы</div>
 
-      <!-- Модель рельс -->
-      <div class="form-group">
-        <label>Модель рельс</label>
-        <select id="railModel">
-          <option value="2400">Универсальный рельс 2400</option>
-          <option value="3500">Универсальный рельс 3500</option>
-        </select>
+        <!-- Модель рельс -->
+        <div class="form-group">
+          <label>Модель рельс</label>
+          <select id="railModel">
+            <option value="2400">Универсальный рельс 2400</option>
+            <option value="3500">Универсальный рельс 3500</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-divider"></div>
@@ -431,6 +434,9 @@ const PRICES = {
   'nut_m8_u':            35,
   'bolt_fl_50':          70,
   'nut_fl':              40,
+  // Мини-рельс
+  'mini_rail':          950,
+  'screw_63_mini':       45,
   // Рег. угол — задняя высокая стойка
   'u_bracket_rear':     320,
   'screw_63_rear':       45,
@@ -451,7 +457,8 @@ let prices = { ...PRICES };
 // UI helpers
 // ─────────────────────────────────────────
 function onSystemTypeChange() {
-  // параметры одинаковы для всех типов систем
+  const isMini = document.getElementById('systemType').value === 'mini-rail';
+  document.getElementById('systemParamsBlock').style.display = isMini ? 'none' : '';
 }
 
 function updateTotalModules() {
@@ -479,9 +486,15 @@ function calculate() {
   const rows          = parseInt(document.getElementById('rowCount').value) || 1;
   const totalModules  = modulesPerRow * rows;
 
-  const typeLabel = type === 'l-bracket' ? 'L-кронштейн' : 'Рег. угол наклона 15 - 30';
+  const typeLabels = { 'l-bracket': 'L-кронштейн', 'reg-angle': 'Рег. угол наклона 15 - 30', 'mini-rail': 'Мини-рельс' };
+  const typeLabel = typeLabels[type];
 
-  // ── Рельсы (общие для обоих типов) ──
+  if (type === 'mini-rail') {
+    renderResults(calcMiniRail(modulesPerRow, rows), { totalModules, typeLabel });
+    return;
+  }
+
+  // ── Рельсы (для L-кронштейн и Рег. угол) ──
   let railQty, connQty;
   if (railNum < 3000) {
     railQty  = Math.ceil(modulesPerRow / 2) * 2 * rows;
@@ -611,6 +624,40 @@ function calcRegAngle(railSection, mpr, rows) {
   ];
 }
 
+// ── Мини-рельс ───────────────────────────
+function calcMiniRail(mpr, rows) {
+  const miniRailQty = (mpr + 1) * 2 * rows;
+  const screwQty    = miniRailQty * 4;
+  const endClampQty = rows * 4;
+  const midClampQty = (mpr - 1) * 2 * rows;
+
+  return [
+    {
+      title: 'Рельсовая система',
+      rows: [
+        { name: 'Мини-рельс 300×60×20',          unit: 'шт', qty: miniRailQty, key: 'mini_rail' },
+        { name: 'Саморез 6,3×80 DIN7976 (A2)',    unit: 'шт', qty: screwQty,    key: 'screw_63_mini' },
+      ],
+    },
+    {
+      title: 'Прижим концевой',
+      rows: [
+        { name: 'Прижим концевой 35',           unit: 'шт', qty: endClampQty, key: 'end_clamp' },
+        { name: 'Защёлка прижима',              unit: 'шт', qty: endClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
+      ],
+    },
+    {
+      title: 'Прижим средний',
+      rows: [
+        { name: 'Прижим средний',               unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
+        { name: 'Защёлка прижима',              unit: 'шт', qty: midClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
+      ],
+    },
+  ];
+}
+
 // ─────────────────────────────────────────
 // Рендер
 // ─────────────────────────────────────────
@@ -660,7 +707,7 @@ function renderResults(sections, meta) {
       tr.dataset.qty = item.qty;
       tr.innerHTML = `
         <td>${item.name}</td>
-        <td>${item.qty} <span class="unit-badge">${item.unit}</span></td>
+        <td>${item.qty} шт</td>
         <td style="white-space:nowrap">
           <input class="price-input" type="number" value="${unitPrice}" min="0"
             onchange="updatePrice('${item.key}', this.value, this.closest('tr'))"
