@@ -218,7 +218,7 @@
 
     /* Total row */
     .total-row td {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      background: var(--primary);
       color: white !important;
       font-weight: 800;
       font-size: 0.95rem;
@@ -316,12 +316,6 @@
       <div class="form-divider"></div>
       <div class="section-label">Параметры L-кронштейна</div>
 
-      <!-- Ориентация -->
-      <div class="form-group">
-        <label>Ориентация модулей</label>
-        <input type="text" value="Портретная" readonly />
-      </div>
-
       <!-- Модель рельс -->
       <div class="form-group">
         <label>Модель рельс</label>
@@ -395,8 +389,8 @@
             <tr>
               <th>Наименование</th>
               <th>Кол-во</th>
-              <th>Цена за ед., ₽</th>
-              <th>Сумма, ₽</th>
+              <th>Цена за ед.</th>
+              <th>Сумма</th>
             </tr>
           </thead>
           <tbody id="estimateBody"></tbody>
@@ -580,12 +574,12 @@ function renderResults(sections, meta) {
       tr.dataset.key = item.key;
       tr.dataset.qty = item.qty;
       tr.innerHTML = `
-        <td>${item.name} <span class="unit-badge">${item.unit}</span></td>
-        <td>${item.qty}</td>
-        <td>
+        <td>${item.name}</td>
+        <td>${item.qty} <span class="unit-badge">${item.unit}</span></td>
+        <td style="white-space:nowrap">
           <input class="price-input" type="number" value="${unitPrice}" min="0"
             onchange="updatePrice('${item.key}', this.value, this.closest('tr'))"
-          />
+          /> ₽
         </td>
         <td class="amount row-amount">${formatMoney(amount)}</td>
       `;
@@ -598,7 +592,7 @@ function renderResults(sections, meta) {
   totalRow.className = 'total-row';
   totalRow.id = 'totalRow';
   totalRow.innerHTML = `
-    <td colspan="2">ИТОГО по смете</td>
+    <td colspan="2">Итого</td>
     <td></td>
     <td id="grandTotalCell">${formatMoney(runningTotal)}</td>
   `;
