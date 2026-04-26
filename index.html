@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Калькулятор сметы — Солнечные панели</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --surface2: #f8f9fa;
+      --border: #e0e4ea;
+      --accent: #f59e0b;
+      --accent-dark: #d97706;
+      --primary: #1e3a5f;
+      --primary-light: #2a5298;
+      --text: #1a202c;
+      --text-muted: #64748b;
+      --success: #059669;
+      --warning: #d97706;
+      --error: #dc2626;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p  { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 24px 48px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-header h2 { font-size: 0.95rem; font-weight: 600; color: var(--primary); }
+    .card-body { padding: 20px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    select:focus, input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(42,82,152,0.1); }
+    input[readonly] { background: var(--surface2); color: var(--text-muted); cursor: default; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Info block */
+    .info-block {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+    }
+    .info-block .info-title { font-weight: 700; color: var(--primary); margin-bottom: 6px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .info-block .info-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #c7d2fe; }
+    .info-block .info-row:last-child { border-bottom: none; }
+    .info-block .info-val { font-weight: 700; color: var(--primary); }
+
+    /* Warning */
+    .warning-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #92400e;
+      display: none;
+    }
+    .warning-banner.visible { display: flex; align-items: center; gap: 8px; }
+
+    /* Button */
+    .btn-calculate {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 6px;
+    }
+    .btn-calculate:hover { opacity: 0.92; }
+    .btn-calculate:active { transform: scale(0.98); }
+
+    /* ── Results ── */
+    .results-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 40px;
+    }
+    .results-placeholder svg { margin-bottom: 16px; opacity: 0.4; }
+    .results-placeholder p { font-size: 0.9rem; }
+
+    /* Summary bar */
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .summary-item .s-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
+    .summary-item .s-value { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: 2px; }
+
+    /* Table */
+    .estimate-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .estimate-table thead th {
+      background: var(--primary);
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .estimate-table thead th:nth-child(2),
+    .estimate-table thead th:nth-child(3),
+    .estimate-table thead th:nth-child(4) { text-align: right; }
+    .estimate-table tbody tr { border-bottom: 1px solid var(--border); }
+    .estimate-table tbody tr:last-child { border-bottom: none; }
+    .estimate-table tbody tr:hover { background: var(--surface2); }
+    .estimate-table tbody td { padding: 9px 12px; }
+    .estimate-table tbody td:nth-child(2),
+    .estimate-table tbody td:nth-child(3),
+    .estimate-table tbody td:nth-child(4) { text-align: right; }
+
+    /* Section row */
+    .section-row td {
+      background: #f1f5f9;
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--primary);
+      padding: 7px 12px !important;
+    }
+
+    /* Total row */
+    .total-row td {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white !important;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 12px !important;
+    }
+
+    .price-input {
+      width: 90px;
+      text-align: right;
+      padding: 4px 7px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 0.82rem;
+      background: white;
+    }
+    .price-input:focus { outline: none; border-color: var(--primary-light); }
+
+    .unit-badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 5px;
+    }
+
+    .amount { font-weight: 700; color: var(--success); }
+
+    /* Print */
+    .btn-print {
+      padding: 8px 18px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      transition: background 0.15s;
+    }
+    .btn-print:hover { background: var(--border); }
+
+    .results-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px; }
+
+    @media print {
+      header, .layout > .card:first-child, .btn-print, .results-actions { display: none !important; }
+      .layout { grid-template-columns: 1fr; padding: 0; }
+      .card { box-shadow: none; border: none; }
+    }
+
+    /* divider */
+    .form-divider { height: 1px; background: var(--border); margin: 18px 0; }
+    .section-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="8" fill="rgba(255,255,255,0.15)"/>
+    <path d="M8 14l10-6 10 6v10l-10 6-10-6V14z" stroke="white" stroke-width="1.8" fill="none"/>
+    <path d="M18 8v20M8 14l10 6 10-6" stroke="rgba(255,255,255,0.6)" stroke-width="1.2"/>
+    <circle cx="18" cy="20" r="3" fill="var(--accent)"/>
+  </svg>
+  <div>
+    <h1>Калькулятор сметы</h1>
+    <p>Монтаж солнечных панелей</p>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── ФОРМА ── -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="1" width="14" height="14" rx="2" stroke="var(--primary)" stroke-width="1.5"/>
+        <path d="M4 5h8M4 8h5M4 11h6" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h2>Параметры расчёта</h2>
+    </div>
+    <div class="card-body">
+
+      <!-- Тип системы -->
+      <div class="form-group">
+        <label>Тип монтажной системы</label>
+        <select id="systemType" onchange="onSystemTypeChange()">
+          <option value="l-bracket">L — кронштейн</option>
+        </select>
+      </div>
+
+      <div class="form-divider"></div>
+      <div class="section-label">Параметры L-кронштейна</div>
+
+      <!-- Ориентация -->
+      <div class="form-group">
+        <label>Ориентация модулей</label>
+        <input type="text" value="Портретная" readonly />
+      </div>
+
+      <!-- Модель рельс -->
+      <div class="form-group">
+        <label>Модель рельс</label>
+        <select id="railModel">
+          <option value="2400">Универсальный рельс 2400</option>
+          <option value="3500">Универсальный рельс 3500</option>
+        </select>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <!-- Конфигурация поля модулей -->
+      <div class="section-label">Конфигурация поля модулей</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Число рядов</label>
+          <input type="number" id="rowCount" value="2" min="1" step="1" oninput="updateTotalModules()" />
+        </div>
+        <div class="form-group">
+          <label>Число модулей в ряду</label>
+          <input type="number" id="modulesPerRow" value="4" min="1" step="1" oninput="updateTotalModules()" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Всего модулей</label>
+        <input type="text" id="totalModulesDisplay" value="8 шт" readonly />
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn-calculate" onclick="calculate()">Рассчитать смету</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── СМЕТА ── -->
+  <div class="card" id="resultsCard">
+    <div class="card-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 2h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="var(--primary)" stroke-width="1.5"/>
+        <path d="M5 6h6M5 9h4M5 12h5" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h2>Смета проекта</h2>
+    </div>
+    <div class="card-body">
+
+      <!-- placeholder -->
+      <div class="results-placeholder" id="placeholder">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <rect x="8" y="8" width="48" height="48" rx="6" stroke="currentColor" stroke-width="2"/>
+          <path d="M20 26h24M20 34h16M20 42h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>Заполните параметры и нажмите<br><strong>«Рассчитать смету»</strong></p>
+      </div>
+
+      <!-- results -->
+      <div id="resultsContent" style="display:none">
+
+        <div class="results-actions">
+          <button class="btn-print" onclick="window.print()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="display:inline;vertical-align:-2px;margin-right:5px"><path d="M3 4V1h8v3M3 10H1V5h12v5h-2M3 8h8v5H3V8z" stroke="currentColor" stroke-width="1.2"/></svg>
+            Печать
+          </button>
+        </div>
+
+        <div class="summary-bar" id="summaryBar"></div>
+
+        <table class="estimate-table" id="estimateTable">
+          <thead>
+            <tr>
+              <th>Наименование</th>
+              <th>Кол-во</th>
+              <th>Цена за ед., ₽</th>
+              <th>Сумма, ₽</th>
+            </tr>
+          </thead>
+          <tbody id="estimateBody"></tbody>
+        </table>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// Каталог цен (редактируемые в таблице)
+// ─────────────────────────────────────────
+const PRICES = {
+  'rail':       1800,
+  'connector':    220,
+  'l_bracket':    280,
+  't_bolt':        55,
+  'nut_m8':        35,
+  'screw_63':      45,
+  'seal':          25,
+  'end_clamp':    195,
+  'clip':          85,
+  'bolt_m6':       65,
+  'mid_clamp':    175,
+};
+
+// Текущие цены (могут меняться пользователем)
+let prices = { ...PRICES };
+
+// ─────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────
+function onSystemTypeChange() {
+  // placeholder for future types
+}
+
+function updateTotalModules() {
+  const rows = parseInt(document.getElementById('rowCount').value) || 0;
+  const mpr  = parseInt(document.getElementById('modulesPerRow').value) || 0;
+  document.getElementById('totalModulesDisplay').value = (rows * mpr) + ' шт';
+}
+
+function formatNum(n) {
+  return Math.round(n).toLocaleString('ru-RU');
+}
+function formatMoney(n) {
+  return formatNum(n) + ' ₽';
+}
+
+// ─────────────────────────────────────────
+// Расчёт
+// ─────────────────────────────────────────
+function calculate() {
+  const railModel = document.getElementById('railModel').value;
+  const railNum   = parseInt(railModel);
+  const railLabel = `Универсальный рельс ${railModel}`;
+
+  const modulesPerRow = parseInt(document.getElementById('modulesPerRow').value) || 1;
+  const rows          = parseInt(document.getElementById('rowCount').value) || 1;
+  const totalModules  = modulesPerRow * rows;
+
+  // ── Рельсы ──
+  let railQty, connQty;
+  if (railNum < 3000) {
+    // Короткие рельсы (2xxx)
+    railQty = Math.ceil(modulesPerRow / 2) * 2 * rows;                           // = 8
+    connQty = (modulesPerRow > 2 ? (modulesPerRow - 2) * 2 : 0) * rows;          // = 8
+  } else {
+    // Длинные рельсы (3xxx, 4xxx)
+    railQty = Math.ceil(modulesPerRow / 3) * 2 * rows;                           // = 8
+    const segPerRow = Math.ceil(modulesPerRow / 3);
+    connQty = (modulesPerRow / 3 > 1 ? (segPerRow - 1) * 2 : 0) * 2 * rows;     // = 8
+  }
+
+  // ── L-кронштейн ──
+  const lBracketQty = (modulesPerRow + 1) * 2 * rows;  // = 20
+  const tBoltQty    = lBracketQty;
+  const nutQty      = lBracketQty;
+  const screwQty    = lBracketQty;
+  const sealQty     = lBracketQty;
+
+  // ── Прижим концевой ──
+  const endClampQty = rows * 4;         // = 8
+  const endClipQty  = endClampQty;
+  const endBoltQty  = endClampQty;
+
+  // ── Прижим средний ──
+  const midClampQty = (modulesPerRow - 1) * 2 * rows;  // = 12
+  const midClipQty  = midClampQty;
+  const midBoltQty  = midClampQty;
+
+  // ─── Сборка строк ───
+  const sections = [
+    {
+      title: 'Рельсовая система',
+      rows: [
+        { name: railLabel, unit: 'шт', qty: railQty, key: 'rail' },
+        { name: 'Соединитель универсальный', unit: 'шт', qty: connQty, key: 'connector' },
+      ]
+    },
+    {
+      title: 'L-кронштейн 37×40×80',
+      rows: [
+        { name: 'L-кронштейн 37×40×80', unit: 'шт', qty: lBracketQty, key: 'l_bracket' },
+        { name: 'Т-болт М8×20 28/15', unit: 'шт', qty: tBoltQty, key: 't_bolt' },
+        { name: 'Гайка М8 DIN6923 А2', unit: 'шт', qty: nutQty, key: 'nut_m8' },
+        { name: 'Саморез 6,3×80 DIN7976 (A2)', unit: 'шт', qty: screwQty, key: 'screw_63' },
+        { name: 'Уплотнитель для L-кронштейна 37×40×2', unit: 'шт', qty: sealQty, key: 'seal' },
+      ]
+    },
+    {
+      title: 'Прижим концевой',
+      rows: [
+        { name: 'Прижим концевой 35', unit: 'шт', qty: endClampQty, key: 'end_clamp' },
+        { name: 'Защёлка прижима', unit: 'шт', qty: endClipQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: endBoltQty, key: 'bolt_m6' },
+      ]
+    },
+    {
+      title: 'Прижим средний',
+      rows: [
+        { name: 'Прижим средний', unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
+        { name: 'Защёлка прижима', unit: 'шт', qty: midClipQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: midBoltQty, key: 'bolt_m6' },
+      ]
+    },
+  ];
+
+  renderResults(sections, { totalModules });
+}
+
+// ─────────────────────────────────────────
+// Рендер
+// ─────────────────────────────────────────
+function renderResults(sections, meta) {
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('resultsContent').style.display = 'block';
+
+  // Summary bar
+  let grandTotal = 0;
+  sections.forEach(s => s.rows.forEach(r => { grandTotal += (prices[r.key] || 0) * r.qty; }));
+
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-item">
+      <div class="s-label">Тип системы</div>
+      <div class="s-value" style="font-size:0.85rem">L-кронштейн</div>
+    </div>
+    <div class="summary-item">
+      <div class="s-label">Модулей</div>
+      <div class="s-value">${meta.totalModules} шт</div>
+    </div>
+    <div class="summary-item">
+      <div class="s-label">Итого</div>
+      <div class="s-value" style="color:var(--success)">${formatMoney(grandTotal)}</div>
+    </div>
+  `;
+
+  // Table body
+  const tbody = document.getElementById('estimateBody');
+  tbody.innerHTML = '';
+
+  let runningTotal = 0;
+
+  sections.forEach(section => {
+    // Section header row
+    const sRow = document.createElement('tr');
+    sRow.className = 'section-row';
+    sRow.innerHTML = `<td colspan="4">${section.title}</td>`;
+    tbody.appendChild(sRow);
+
+    section.rows.forEach(item => {
+      const unitPrice = prices[item.key] || 0;
+      const amount    = unitPrice * item.qty;
+      runningTotal   += amount;
+
+      const tr = document.createElement('tr');
+      tr.dataset.key = item.key;
+      tr.dataset.qty = item.qty;
+      tr.innerHTML = `
+        <td>${item.name} <span class="unit-badge">${item.unit}</span></td>
+        <td>${item.qty}</td>
+        <td>
+          <input class="price-input" type="number" value="${unitPrice}" min="0"
+            onchange="updatePrice('${item.key}', this.value, this.closest('tr'))"
+          />
+        </td>
+        <td class="amount row-amount">${formatMoney(amount)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+
+  // Total row
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'total-row';
+  totalRow.id = 'totalRow';
+  totalRow.innerHTML = `
+    <td colspan="2">ИТОГО по смете</td>
+    <td></td>
+    <td id="grandTotalCell">${formatMoney(runningTotal)}</td>
+  `;
+  tbody.appendChild(totalRow);
+}
+
+function updatePrice(key, newVal, tr) {
+  prices[key] = parseFloat(newVal) || 0;
+  const qty = parseInt(tr.dataset.qty) || 0;
+  const amount = prices[key] * qty;
+  tr.querySelector('.row-amount').textContent = formatMoney(amount);
+  recalcTotal();
+}
+
+function recalcTotal() {
+  let total = 0;
+  document.querySelectorAll('#estimateBody tr[data-key]').forEach(tr => {
+    const qty  = parseInt(tr.dataset.qty) || 0;
+    const key  = tr.dataset.key;
+    total += (prices[key] || 0) * qty;
+  });
+  const cell = document.getElementById('grandTotalCell');
+  if (cell) cell.textContent = formatMoney(total);
+
+  // Update summary bar total
+  const summaryVals = document.querySelectorAll('.summary-item .s-value');
+  if (summaryVals.length >= 3) {
+    summaryVals[2].textContent = formatMoney(total);
+  }
+}
+</script>
+</body>
+</html>
