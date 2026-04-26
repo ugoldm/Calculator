@@ -310,11 +310,12 @@
         <label>Тип монтажной системы</label>
         <select id="systemType" onchange="onSystemTypeChange()">
           <option value="l-bracket">L — кронштейн</option>
+          <option value="reg-angle">Рег. угол наклона 15 - 30</option>
         </select>
       </div>
 
       <div class="form-divider"></div>
-      <div class="section-label">Параметры L-кронштейна</div>
+      <div class="section-label">Параметры системы</div>
 
       <!-- Модель рельс -->
       <div class="form-group">
@@ -408,17 +409,39 @@
 // Каталог цен (редактируемые в таблице)
 // ─────────────────────────────────────────
 const PRICES = {
-  'rail':       1800,
-  'connector':    220,
-  'l_bracket':    280,
-  't_bolt':        55,
-  'nut_m8':        35,
-  'screw_63':      45,
-  'seal':          25,
-  'end_clamp':    195,
-  'clip':          85,
-  'bolt_m6':       65,
-  'mid_clamp':    175,
+  // Общие
+  'rail':              1800,
+  'connector':          220,
+  'end_clamp':          195,
+  'clip':                85,
+  'bolt_m6':             65,
+  'mid_clamp':          175,
+  // L-кронштейн
+  'l_bracket':          280,
+  't_bolt':              55,
+  'nut_m8':              35,
+  'screw_63':            45,
+  'seal_l':              25,
+  // Рег. угол — передняя низкая стойка
+  'u_bracket':          320,
+  'screw_63_u':          45,
+  'seal_u':              25,
+  'g_opor':             180,
+  't_bolt_u':            55,
+  'nut_m8_u':            35,
+  'bolt_fl_50':          70,
+  'nut_fl':              40,
+  // Рег. угол — задняя высокая стойка
+  'u_bracket_rear':     320,
+  'screw_63_rear':       45,
+  'seal_u_rear':         25,
+  'o_opor':             260,
+  's_opor':             210,
+  'l_bracket_50':       190,
+  't_bolt_rear':         55,
+  'nut_m8_rear':         35,
+  'bolt_fl_rear':        70,
+  'nut_fl_rear':         40,
 };
 
 // Текущие цены (могут меняться пользователем)
@@ -428,7 +451,7 @@ let prices = { ...PRICES };
 // UI helpers
 // ─────────────────────────────────────────
 function onSystemTypeChange() {
-  // placeholder for future types
+  // параметры одинаковы для всех типов систем
 }
 
 function updateTotalModules() {
@@ -448,82 +471,144 @@ function formatMoney(n) {
 // Расчёт
 // ─────────────────────────────────────────
 function calculate() {
-  const railModel = document.getElementById('railModel').value;
-  const railNum   = parseInt(railModel);
-  const railLabel = `Универсальный рельс ${railModel}`;
-
+  const type          = document.getElementById('systemType').value;
+  const railModel     = document.getElementById('railModel').value;
+  const railNum       = parseInt(railModel);
+  const railLabel     = `Универсальный рельс ${railModel}`;
   const modulesPerRow = parseInt(document.getElementById('modulesPerRow').value) || 1;
   const rows          = parseInt(document.getElementById('rowCount').value) || 1;
   const totalModules  = modulesPerRow * rows;
 
-  // ── Рельсы ──
+  const typeLabel = type === 'l-bracket' ? 'L-кронштейн' : 'Рег. угол наклона 15 - 30';
+
+  // ── Рельсы (общие для обоих типов) ──
   let railQty, connQty;
   if (railNum < 3000) {
-    // Короткие рельсы (2xxx)
-    railQty = Math.ceil(modulesPerRow / 2) * 2 * rows;                           // = 8
-    connQty = (modulesPerRow > 2 ? (modulesPerRow - 2) * 2 : 0) * rows;          // = 8
+    railQty  = Math.ceil(modulesPerRow / 2) * 2 * rows;
+    connQty  = (modulesPerRow > 3 ? (modulesPerRow - 2) * 2 * rows : 0);
   } else {
-    // Длинные рельсы (3xxx, 4xxx)
-    railQty = Math.ceil(modulesPerRow / 3) * 2 * rows;                           // = 8
-    const segPerRow = Math.ceil(modulesPerRow / 3);
-    connQty = (modulesPerRow / 3 > 1 ? (segPerRow - 1) * 2 : 0) * 2 * rows;     // = 8
+    railQty  = Math.ceil(modulesPerRow / 3) * 2 * rows;
+    connQty  = (modulesPerRow / 3 > 1
+      ? (Math.ceil(modulesPerRow / 3) - 1) * 2 * 2 * rows
+      : 0);
   }
 
-  // ── L-кронштейн ──
-  const lBracketQty = (modulesPerRow + 1) * 2 * rows;  // = 20
-  const tBoltQty    = lBracketQty;
-  const nutQty      = lBracketQty;
-  const screwQty    = lBracketQty;
-  const sealQty     = lBracketQty;
+  const railSection = {
+    title: 'Рельсовая система',
+    rows: [
+      { name: railLabel,                  unit: 'шт', qty: railQty,  key: 'rail' },
+      { name: 'Соединитель универсальный', unit: 'шт', qty: connQty,  key: 'connector' },
+    ],
+  };
 
-  // ── Прижим концевой ──
-  const endClampQty = rows * 4;         // = 8
-  const endClipQty  = endClampQty;
-  const endBoltQty  = endClampQty;
+  let sections;
+  if (type === 'l-bracket') {
+    sections = calcLBracket(railSection, modulesPerRow, rows);
+  } else {
+    sections = calcRegAngle(railSection, modulesPerRow, rows);
+  }
 
-  // ── Прижим средний ──
-  const midClampQty = (modulesPerRow - 1) * 2 * rows;  // = 12
-  const midClipQty  = midClampQty;
-  const midBoltQty  = midClampQty;
+  renderResults(sections, { totalModules, typeLabel });
+}
 
-  // ─── Сборка строк ───
-  const sections = [
-    {
-      title: 'Рельсовая система',
-      rows: [
-        { name: railLabel, unit: 'шт', qty: railQty, key: 'rail' },
-        { name: 'Соединитель универсальный', unit: 'шт', qty: connQty, key: 'connector' },
-      ]
-    },
+// ── L-кронштейн ──────────────────────────
+function calcLBracket(railSection, mpr, rows) {
+  const lBracketQty = (mpr + 1) * 2 * rows;
+  const endClampQty = rows * 4;
+  const midClampQty = (mpr - 1) * 2 * rows;
+
+  return [
+    railSection,
     {
       title: 'L-кронштейн 37×40×80',
       rows: [
-        { name: 'L-кронштейн 37×40×80', unit: 'шт', qty: lBracketQty, key: 'l_bracket' },
-        { name: 'Т-болт М8×20 28/15', unit: 'шт', qty: tBoltQty, key: 't_bolt' },
-        { name: 'Гайка М8 DIN6923 А2', unit: 'шт', qty: nutQty, key: 'nut_m8' },
-        { name: 'Саморез 6,3×80 DIN7976 (A2)', unit: 'шт', qty: screwQty, key: 'screw_63' },
-        { name: 'Уплотнитель для L-кронштейна 37×40×2', unit: 'шт', qty: sealQty, key: 'seal' },
-      ]
+        { name: 'L-кронштейн 37×40×80',              unit: 'шт', qty: lBracketQty,  key: 'l_bracket' },
+        { name: 'Т-болт М8×20 28/15',                 unit: 'шт', qty: lBracketQty,  key: 't_bolt' },
+        { name: 'Гайка М8 DIN6923 А2',                unit: 'шт', qty: lBracketQty,  key: 'nut_m8' },
+        { name: 'Саморез 6,3×80 DIN7976 (A2)',        unit: 'шт', qty: lBracketQty,  key: 'screw_63' },
+        { name: 'Уплотнитель для L-кронштейна 37×40×2', unit: 'шт', qty: lBracketQty, key: 'seal_l' },
+      ],
     },
     {
       title: 'Прижим концевой',
       rows: [
-        { name: 'Прижим концевой 35', unit: 'шт', qty: endClampQty, key: 'end_clamp' },
-        { name: 'Защёлка прижима', unit: 'шт', qty: endClipQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: endBoltQty, key: 'bolt_m6' },
-      ]
+        { name: 'Прижим концевой 35',             unit: 'шт', qty: endClampQty, key: 'end_clamp' },
+        { name: 'Защёлка прижима',                unit: 'шт', qty: endClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
+      ],
     },
     {
       title: 'Прижим средний',
       rows: [
-        { name: 'Прижим средний', unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
-        { name: 'Защёлка прижима', unit: 'шт', qty: midClipQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: midBoltQty, key: 'bolt_m6' },
-      ]
+        { name: 'Прижим средний',                 unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
+        { name: 'Защёлка прижима',                unit: 'шт', qty: midClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
+      ],
     },
   ];
+}
 
-  renderResults(sections, { totalModules });
+// ── Рег. угол наклона 15 - 30 ─────────────
+function calcRegAngle(railSection, mpr, rows) {
+  // Передняя низкая стойка
+  const uFront = (mpr + 1) * rows;
+
+  // Задняя высокая стойка
+  const uRear       = (mpr + 1) * rows;
+  const tBoltRear   = uRear + uRear * 2;   // U-кронштейн + С-опора * 2
+  const boltFlRear  = uRear + uRear;        // U-кронштейн + L-кронштейн 50×23×50
+
+  // Прижимы
+  const endClampQty = rows * 4;
+  const midClampQty = (mpr - 1) * 2 * rows;
+
+  return [
+    railSection,
+    {
+      title: 'Передняя низкая стойка',
+      rows: [
+        { name: 'U-кронштейн 99×35×47',             unit: 'шт', qty: uFront,      key: 'u_bracket' },
+        { name: 'Саморез 6,3×80 DIN7976 (A2)',       unit: 'шт', qty: uFront * 2,  key: 'screw_63_u' },
+        { name: 'Уплотнитель для U-кронштейна 30×35×2', unit: 'шт', qty: uFront * 2, key: 'seal_u' },
+        { name: 'Г-опора',                           unit: 'шт', qty: uFront,      key: 'g_opor' },
+        { name: 'Т-болт М8×20 28/15',                unit: 'шт', qty: uFront,      key: 't_bolt_u' },
+        { name: 'Гайка М8 DIN6923 А2',               unit: 'шт', qty: uFront,      key: 'nut_m8_u' },
+        { name: 'Болт фланц. DIN6921 М8×50 (А2)',    unit: 'шт', qty: uFront,      key: 'bolt_fl_50' },
+        { name: 'Гайка фланец М8 (6923)',             unit: 'шт', qty: uFront,      key: 'nut_fl' },
+      ],
+    },
+    {
+      title: 'Задняя высокая стойка',
+      rows: [
+        { name: 'U-кронштейн 99×35×47',             unit: 'шт', qty: uRear,       key: 'u_bracket_rear' },
+        { name: 'Саморез 6,3×80 DIN7976 (A2)',       unit: 'шт', qty: uRear * 2,   key: 'screw_63_rear' },
+        { name: 'Уплотнитель для U-кронштейна 30×35×2', unit: 'шт', qty: uRear,   key: 'seal_u_rear' },
+        { name: 'O-опора 30×30×240',                 unit: 'шт', qty: uRear,       key: 'o_opor' },
+        { name: 'С-опора 26×26×240',                 unit: 'шт', qty: uRear,       key: 's_opor' },
+        { name: 'L-кронштейн 50×23×50',              unit: 'шт', qty: uRear,       key: 'l_bracket_50' },
+        { name: 'Т-болт М8×20 28/15',                unit: 'шт', qty: tBoltRear,   key: 't_bolt_rear' },
+        { name: 'Гайка М8 DIN6923 А2',               unit: 'шт', qty: tBoltRear,   key: 'nut_m8_rear' },
+        { name: 'Болт фланц. DIN6921 М8×50 (А2)',    unit: 'шт', qty: boltFlRear,  key: 'bolt_fl_rear' },
+        { name: 'Гайка фланец М8 (6923)',             unit: 'шт', qty: boltFlRear,  key: 'nut_fl_rear' },
+      ],
+    },
+    {
+      title: 'Прижим концевой',
+      rows: [
+        { name: 'Прижим концевой 35',             unit: 'шт', qty: endClampQty, key: 'end_clamp' },
+        { name: 'Защёлка прижима',                unit: 'шт', qty: endClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
+      ],
+    },
+    {
+      title: 'Прижим средний',
+      rows: [
+        { name: 'Прижим средний',                 unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
+        { name: 'Защёлка прижима',                unit: 'шт', qty: midClampQty, key: 'clip' },
+        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
+      ],
+    },
+  ];
 }
 
 // ─────────────────────────────────────────
@@ -540,7 +625,7 @@ function renderResults(sections, meta) {
   document.getElementById('summaryBar').innerHTML = `
     <div class="summary-item">
       <div class="s-label">Тип системы</div>
-      <div class="s-value" style="font-size:0.85rem">L-кронштейн</div>
+      <div class="s-value" style="font-size:0.85rem">${meta.typeLabel}</div>
     </div>
     <div class="summary-item">
       <div class="s-label">Модулей</div>
