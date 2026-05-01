@@ -766,32 +766,29 @@ function calcRegAngle(railSection, mpr, rows) {
 // ── Мини-рельс ───────────────────────────
 function calcMiniRail(mpr, rows) {
   const miniRailQty = (mpr + 1) * 2 * rows;
-  const screwQty    = miniRailQty * 4;
   const endClampQty = rows * 4;
   const midClampQty = (mpr - 1) * 2 * rows;
 
   return [
     {
       title: 'Рельсовая система',
+      hideTitle: true,
       rows: [
         { name: 'Мини-рельс 300×60×20',          unit: 'шт', qty: miniRailQty, key: 'mini_rail' },
-        { name: 'Саморез 6,3×80 DIN7976 (A2)',    unit: 'шт', qty: screwQty,    key: 'screw_63_mini' },
       ],
     },
     {
       title: 'Прижим концевой',
+      hideTitle: true,
       rows: [
         { name: 'Прижим концевой 35',           unit: 'шт', qty: endClampQty, key: 'end_clamp' },
-        { name: 'Защёлка прижима',              unit: 'шт', qty: endClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
       ],
     },
     {
       title: 'Прижим средний',
+      hideTitle: true,
       rows: [
         { name: 'Прижим средний',               unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
-        { name: 'Защёлка прижима',              unit: 'шт', qty: midClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2', unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
       ],
     },
   ];
