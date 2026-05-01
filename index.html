@@ -448,48 +448,30 @@
 
 </div>
 
+<script src="prices.js"></script>
 <script>
 // ─────────────────────────────────────────
-// Каталог цен (редактируемые в таблице)
+// Каталог цен
 // ─────────────────────────────────────────
-const PRICES = {
+const DEFAULT_PRICES = {
   // Общие
-  'rail':              1800,
-  'connector':          220,
-  'end_clamp':          195,
-  'clip':                85,
-  'bolt_m6':             65,
-  'mid_clamp':          175,
+  'rail_2400':         116400,
+  'rail_3500':         169700,
+  'connector':          3900,
+  'end_clamp':          10200,
+  'mid_clamp':          9300,
+
   // L-кронштейн
-  'l_bracket':          280,
-  't_bolt':              55,
-  'nut_m8':              35,
-  'screw_63':            45,
-  'seal_l':              25,
-  // Рег. угол — передняя низкая стойка
-  'u_bracket':          320,
-  'screw_63_u':          45,
-  'seal_u':              25,
-  'g_opor':             180,
-  't_bolt_u':            55,
-  'nut_m8_u':            35,
-  'bolt_fl_50':          70,
-  'nut_fl':              40,
+  'l_bracket':          47800,
+
+  // Рег. угол
+  'front_stand':        38100,
+  'rear_stand':         96900,
+
   // Мини-рельс
-  'mini_rail':          950,
-  'screw_63_mini':       45,
-  // Рег. угол — задняя высокая стойка
-  'u_bracket_rear':     320,
-  'screw_63_rear':       45,
-  'seal_u_rear':         25,
-  'o_opor':             260,
-  's_opor':             210,
-  'l_bracket_50':       190,
-  't_bolt_rear':         55,
-  'nut_m8_rear':         35,
-  'bolt_fl_rear':        70,
-  'nut_fl_rear':         40,
+  'mini_rail':          40600,
 };
+const PRICES = { ...DEFAULT_PRICES, ...(window.PRICES || {}) };
 
 // Текущие цены
 let prices = { ...PRICES };
@@ -594,7 +576,7 @@ function calcSectionsForIsland(type, railNum, railLabel, mpr, rows, moduleWidth)
     title: 'Рельсовая система',
     hideTitle: true,
     rows: [
-      { name: railLabel,                   unit: 'шт', qty: railQty, key: 'rail' },
+      { name: railLabel,                   unit: 'шт', qty: railQty, key: railNum < 3000 ? 'rail_2400' : 'rail_3500' },
       { name: 'Соединитель универсальный',  unit: 'шт', qty: connQty, key: 'connector' },
     ],
   };
@@ -703,14 +685,14 @@ function calcRegAngle(railSection, mpr, rows) {
       title: 'Передняя стойка',
       hideTitle: true,
       rows: [
-        { name: 'Передняя стойка',            unit: 'шт', qty: uFront,      key: 'u_bracket' },
+        { name: 'Передняя стойка',            unit: 'шт', qty: uFront,      key: 'front_stand' },
       ],
     },
     {
       title: 'Задняя стойка',
       hideTitle: true,
       rows: [
-        { name: 'Задняя стойка',              unit: 'шт', qty: uRear,       key: 'u_bracket_rear' },
+        { name: 'Задняя стойка',              unit: 'шт', qty: uRear,       key: 'rear_stand' },
       ],
     },
     {
