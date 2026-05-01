@@ -270,7 +270,7 @@
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 11px 12px 10px;
+      padding: 11px 12px;
       margin-bottom: 8px;
     }
     .island-header {
@@ -303,18 +303,6 @@
       transition: background 0.12s, color 0.12s;
     }
     .btn-remove-island:hover { background: #fee2e2; color: var(--error); }
-    .island-hint {
-      margin-top: 10px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-    .island-hint .hint-sub {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-left: 4px;
-    }
     .btn-add-island {
       width: 100%;
       padding: 8px;
@@ -380,6 +368,11 @@
             <option value="2400">Универсальный рельс 2400</option>
             <option value="3500">Универсальный рельс 3500</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ширина модуля (см)</label>
+          <input type="number" id="moduleWidth" value="1100" min="1" step="1" />
         </div>
       </div>
 
@@ -518,17 +511,7 @@ function removeIsland(idx) {
 
 function updateIsland(idx, field, val) {
   islands[idx][field] = parseInt(val) || 1;
-  updateIslandHint(idx);
   updateTotalModules();
-}
-
-function updateIslandHint(idx) {
-  const el = document.getElementById('hint-' + idx);
-  if (!el) return;
-  const { rows, mpr, count } = islands[idx];
-  const perIsland = rows * mpr;
-  const total = perIsland * count;
-  el.innerHTML = `Всего модулей в поле: <strong>${total}</strong>`;
 }
 
 function renderIslands() {
@@ -563,10 +546,8 @@ function renderIslands() {
             oninput="updateIsland(${i}, 'count', this.value)" />
         </div>
       </div>
-      <div class="island-hint" id="hint-${i}"></div>
     `;
     container.appendChild(div);
-    updateIslandHint(i);
   });
   updateTotalModules();
 }
@@ -645,6 +626,7 @@ function mergeSections(allSections) {
 function calculate() {
   const type      = document.getElementById('systemType').value;
   const railModel = document.getElementById('railModel').value;
+  const moduleWidth = parseInt(document.getElementById('moduleWidth').value, 10) || 1100;
   const railNum   = parseInt(railModel);
   const railLabel = `Универсальный рельс ${railModel}`;
 
@@ -665,7 +647,7 @@ function calculate() {
     allSections.push(sections);
   });
 
-  renderResults(mergeSections(allSections), { totalModules, typeLabel });
+  renderResults(mergeSections(allSections), { totalModules, typeLabel, moduleWidth });
 }
 
 // ── L-кронштейн ──────────────────────────
