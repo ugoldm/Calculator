@@ -707,8 +707,6 @@ function calcRegAngle(railSection, mpr, rows) {
 
   // Задняя высокая стойка
   const uRear       = (mpr + 1) * rows;
-  const tBoltRear   = uRear + uRear * 2;   // U-кронштейн + С-опора * 2
-  const boltFlRear  = uRear + uRear;        // U-кронштейн + L-кронштейн 50×23×50
 
   // Прижимы
   const endClampQty = rows * 4;
@@ -717,47 +715,31 @@ function calcRegAngle(railSection, mpr, rows) {
   return [
     railSection,
     {
-      title: 'Передняя низкая стойка',
+      title: 'Передняя стойка',
+      hideTitle: true,
       rows: [
-        { name: 'U-кронштейн 99×35×47',             unit: 'шт', qty: uFront,      key: 'u_bracket' },
-        { name: 'Саморез 6,3×80 DIN7976 (A2)',       unit: 'шт', qty: uFront * 2,  key: 'screw_63_u' },
-        { name: 'Уплотнитель для U-кронштейна 30×35×2', unit: 'шт', qty: uFront * 2, key: 'seal_u' },
-        { name: 'Г-опора',                           unit: 'шт', qty: uFront,      key: 'g_opor' },
-        { name: 'Т-болт М8×20 28/15',                unit: 'шт', qty: uFront,      key: 't_bolt_u' },
-        { name: 'Гайка М8 DIN6923 А2',               unit: 'шт', qty: uFront,      key: 'nut_m8_u' },
-        { name: 'Болт фланц. DIN6921 М8×50 (А2)',    unit: 'шт', qty: uFront,      key: 'bolt_fl_50' },
-        { name: 'Гайка фланец М8 (6923)',             unit: 'шт', qty: uFront,      key: 'nut_fl' },
+        { name: 'Передняя стойка',            unit: 'шт', qty: uFront,      key: 'u_bracket' },
       ],
     },
     {
-      title: 'Задняя высокая стойка',
+      title: 'Задняя стойка',
+      hideTitle: true,
       rows: [
-        { name: 'U-кронштейн 99×35×47',             unit: 'шт', qty: uRear,       key: 'u_bracket_rear' },
-        { name: 'Саморез 6,3×80 DIN7976 (A2)',       unit: 'шт', qty: uRear * 2,   key: 'screw_63_rear' },
-        { name: 'Уплотнитель для U-кронштейна 30×35×2', unit: 'шт', qty: uRear,   key: 'seal_u_rear' },
-        { name: 'O-опора 30×30×240',                 unit: 'шт', qty: uRear,       key: 'o_opor' },
-        { name: 'С-опора 26×26×240',                 unit: 'шт', qty: uRear,       key: 's_opor' },
-        { name: 'L-кронштейн 50×23×50',              unit: 'шт', qty: uRear,       key: 'l_bracket_50' },
-        { name: 'Т-болт М8×20 28/15',                unit: 'шт', qty: tBoltRear,   key: 't_bolt_rear' },
-        { name: 'Гайка М8 DIN6923 А2',               unit: 'шт', qty: tBoltRear,   key: 'nut_m8_rear' },
-        { name: 'Болт фланц. DIN6921 М8×50 (А2)',    unit: 'шт', qty: boltFlRear,  key: 'bolt_fl_rear' },
-        { name: 'Гайка фланец М8 (6923)',             unit: 'шт', qty: boltFlRear,  key: 'nut_fl_rear' },
+        { name: 'Задняя стойка',              unit: 'шт', qty: uRear,       key: 'u_bracket_rear' },
       ],
     },
     {
       title: 'Прижим концевой',
+      hideTitle: true,
       rows: [
         { name: 'Прижим концевой 35',             unit: 'шт', qty: endClampQty, key: 'end_clamp' },
-        { name: 'Защёлка прижима',                unit: 'шт', qty: endClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
       ],
     },
     {
       title: 'Прижим средний',
+      hideTitle: true,
       rows: [
         { name: 'Прижим средний',                 unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
-        { name: 'Защёлка прижима',                unit: 'шт', qty: midClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
       ],
     },
   ];
