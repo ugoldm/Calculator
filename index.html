@@ -275,6 +275,66 @@
     .form-divider { height: 1px; background: var(--border); margin: 18px 0; }
     .section-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Islands */
+    .island-entry {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px 10px;
+      margin-bottom: 8px;
+    }
+    .island-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .island-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .island-dims {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .island-dims .form-group { flex: 1; margin-bottom: 0; }
+    .island-count .form-group { margin-bottom: 0; }
+    .btn-remove-island {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .btn-remove-island:hover { background: #fee2e2; color: var(--error); }
+    .island-hint {
+      display: inline-block;
+      margin-top: 7px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .island-hint strong { color: var(--primary); }
+    .btn-add-island {
+      width: 100%;
+      padding: 8px;
+      background: var(--surface2);
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-light);
+      transition: background 0.15s, border-color 0.15s;
+      margin-bottom: 14px;
+    }
+    .btn-add-island:hover { background: #eff6ff; border-color: var(--primary-light); }
   </style>
 </head>
 <body>
@@ -331,22 +391,16 @@
 
       <div class="form-divider"></div>
 
-      <!-- Конфигурация поля модулей -->
-      <div class="section-label">Конфигурация поля модулей</div>
+      <!-- Поля модулей -->
+      <div class="section-label">Поля модулей</div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Число рядов</label>
-          <input type="number" id="rowCount" value="2" min="1" step="1" oninput="updateTotalModules()" />
-        </div>
-        <div class="form-group">
-          <label>Число модулей в ряду</label>
-          <input type="number" id="modulesPerRow" value="4" min="1" step="1" oninput="updateTotalModules()" />
-        </div>
-      </div>
+      <div id="islandsContainer"></div>
+
+      <button class="btn-add-island" onclick="addIsland()">+ Добавить поле</button>
+
       <div class="form-group">
         <label>Всего модулей</label>
-        <input type="text" id="totalModulesDisplay" value="8 шт" readonly />
+        <input type="text" id="totalModulesDisplay" readonly />
       </div>
 
       <div style="margin-top:20px">
@@ -454,6 +508,77 @@ const PRICES = {
 let prices = { ...PRICES };
 
 // ─────────────────────────────────────────
+// Islands state
+// ─────────────────────────────────────────
+let islands = [{ rows: 2, mpr: 4, count: 1 }];
+
+function addIsland() {
+  islands.push({ rows: 2, mpr: 4, count: 1 });
+  renderIslands();
+}
+
+function removeIsland(idx) {
+  islands.splice(idx, 1);
+  renderIslands();
+}
+
+function updateIsland(idx, field, val) {
+  islands[idx][field] = parseInt(val) || 1;
+  updateIslandHint(idx);
+  updateTotalModules();
+}
+
+function updateIslandHint(idx) {
+  const el = document.getElementById('hint-' + idx);
+  if (!el) return;
+  const { rows, mpr, count } = islands[idx];
+  const perIsland = rows * mpr;
+  const total = perIsland * count;
+  el.innerHTML = `${rows} × ${mpr} = <strong>${perIsland} модулей</strong> в поле` +
+    (count > 1 ? ` × ${count} = <strong>${total} шт</strong>` : '');
+}
+
+function renderIslands() {
+  const container = document.getElementById('islandsContainer');
+  container.innerHTML = '';
+  islands.forEach((island, i) => {
+    const div = document.createElement('div');
+    div.className = 'island-entry';
+    div.innerHTML = `
+      <div class="island-header">
+        <span class="island-title">Поле ${i + 1}</span>
+        ${islands.length > 1
+          ? `<button class="btn-remove-island" onclick="removeIsland(${i})">✕ Удалить</button>`
+          : ''}
+      </div>
+      <div class="island-dims">
+        <div class="form-group">
+          <label>Рядов</label>
+          <input type="number" value="${island.rows}" min="1" step="1"
+            oninput="updateIsland(${i}, 'rows', this.value)" />
+        </div>
+        <div class="form-group">
+          <label>Модулей в ряду</label>
+          <input type="number" value="${island.mpr}" min="1" step="1"
+            oninput="updateIsland(${i}, 'mpr', this.value)" />
+        </div>
+      </div>
+      <div class="island-count">
+        <div class="form-group">
+          <label>Кол-во полей</label>
+          <input type="number" value="${island.count}" min="1" step="1"
+            oninput="updateIsland(${i}, 'count', this.value)" />
+        </div>
+      </div>
+      <div class="island-hint" id="hint-${i}"></div>
+    `;
+    container.appendChild(div);
+    updateIslandHint(i);
+  });
+  updateTotalModules();
+}
+
+// ─────────────────────────────────────────
 // UI helpers
 // ─────────────────────────────────────────
 function onSystemTypeChange() {
@@ -462,9 +587,8 @@ function onSystemTypeChange() {
 }
 
 function updateTotalModules() {
-  const rows = parseInt(document.getElementById('rowCount').value) || 0;
-  const mpr  = parseInt(document.getElementById('modulesPerRow').value) || 0;
-  document.getElementById('totalModulesDisplay').value = (rows * mpr) + ' шт';
+  const total = islands.reduce((sum, { rows, mpr, count }) => sum + rows * mpr * count, 0);
+  document.getElementById('totalModulesDisplay').value = total + ' шт';
 }
 
 function formatNum(n) {
@@ -477,51 +601,75 @@ function formatMoney(n) {
 // ─────────────────────────────────────────
 // Расчёт
 // ─────────────────────────────────────────
-function calculate() {
-  const type          = document.getElementById('systemType').value;
-  const railModel     = document.getElementById('railModel').value;
-  const railNum       = parseInt(railModel);
-  const railLabel     = `Универсальный рельс ${railModel}`;
-  const modulesPerRow = parseInt(document.getElementById('modulesPerRow').value) || 1;
-  const rows          = parseInt(document.getElementById('rowCount').value) || 1;
-  const totalModules  = modulesPerRow * rows;
+function calcSectionsForIsland(type, railNum, railLabel, mpr, rows) {
+  if (type === 'mini-rail') return calcMiniRail(mpr, rows);
 
-  const typeLabels = { 'l-bracket': 'L-кронштейн', 'reg-angle': 'Рег. угол наклона 15 - 30', 'mini-rail': 'Мини-рельс' };
-  const typeLabel = typeLabels[type];
-
-  if (type === 'mini-rail') {
-    renderResults(calcMiniRail(modulesPerRow, rows), { totalModules, typeLabel });
-    return;
-  }
-
-  // ── Рельсы (для L-кронштейн и Рег. угол) ──
   let railQty, connQty;
   if (railNum < 3000) {
-    railQty  = Math.ceil(modulesPerRow / 2) * 2 * rows;
-    connQty  = (modulesPerRow > 3 ? (modulesPerRow - 2) * 2 * rows : 0);
+    railQty = Math.ceil(mpr / 2) * 2 * rows;
+    connQty = mpr > 3 ? (mpr - 2) * 2 * rows : 0;
   } else {
-    railQty  = Math.ceil(modulesPerRow / 3) * 2 * rows;
-    connQty  = (modulesPerRow / 3 > 1
-      ? (Math.ceil(modulesPerRow / 3) - 1) * 2 * 2 * rows
-      : 0);
+    railQty = Math.ceil(mpr / 3) * 2 * rows;
+    connQty = mpr / 3 > 1 ? (Math.ceil(mpr / 3) - 1) * 2 * 2 * rows : 0;
   }
 
   const railSection = {
     title: 'Рельсовая система',
     rows: [
-      { name: railLabel,                  unit: 'шт', qty: railQty,  key: 'rail' },
-      { name: 'Соединитель универсальный', unit: 'шт', qty: connQty,  key: 'connector' },
+      { name: railLabel,                   unit: 'шт', qty: railQty, key: 'rail' },
+      { name: 'Соединитель универсальный',  unit: 'шт', qty: connQty, key: 'connector' },
     ],
   };
 
-  let sections;
-  if (type === 'l-bracket') {
-    sections = calcLBracket(railSection, modulesPerRow, rows);
-  } else {
-    sections = calcRegAngle(railSection, modulesPerRow, rows);
-  }
+  return type === 'l-bracket'
+    ? calcLBracket(railSection, mpr, rows)
+    : calcRegAngle(railSection, mpr, rows);
+}
 
-  renderResults(sections, { totalModules, typeLabel });
+function mergeSections(allSections) {
+  const order = [];
+  const map = {};
+  allSections.forEach(sections => {
+    sections.forEach(section => {
+      if (!map[section.title]) {
+        map[section.title] = {};
+        order.push(section.title);
+      }
+      section.rows.forEach(item => {
+        if (!map[section.title][item.key]) {
+          map[section.title][item.key] = { ...item, qty: 0 };
+        }
+        map[section.title][item.key].qty += item.qty;
+      });
+    });
+  });
+  return order.map(title => ({ title, rows: Object.values(map[title]) }));
+}
+
+function calculate() {
+  const type      = document.getElementById('systemType').value;
+  const railModel = document.getElementById('railModel').value;
+  const railNum   = parseInt(railModel);
+  const railLabel = `Универсальный рельс ${railModel}`;
+
+  const typeLabels = { 'l-bracket': 'L-кронштейн', 'reg-angle': 'Рег. угол наклона 15 - 30', 'mini-rail': 'Мини-рельс' };
+  const typeLabel  = typeLabels[type];
+
+  let totalModules = 0;
+  const allSections = [];
+
+  islands.forEach(({ rows, mpr, count }) => {
+    const r = rows || 1;
+    const m = mpr  || 1;
+    const c = count || 1;
+    totalModules += r * m * c;
+    const sections = calcSectionsForIsland(type, railNum, railLabel, m, r);
+    // scale by island count
+    sections.forEach(s => s.rows.forEach(item => { item.qty *= c; }));
+    allSections.push(sections);
+  });
+
+  renderResults(mergeSections(allSections), { totalModules, typeLabel });
 }
 
 // ── L-кронштейн ──────────────────────────
@@ -755,6 +903,9 @@ function recalcTotal() {
     summaryVals[2].textContent = formatMoney(total);
   }
 }
+
+// Init
+renderIslands();
 </script>
 </body>
 </html>

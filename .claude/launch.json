@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "calculator",
+      "runtimeExecutable": "/Users/ugoldm/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "runtimeArgs": ["serve.js"],
+      "port": 3456
+    }
+  ]
+}
