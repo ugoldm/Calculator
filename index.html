@@ -619,6 +619,7 @@ function calcSectionsForIsland(type, railNum, railLabel, mpr, rows) {
 
   const railSection = {
     title: 'Рельсовая система',
+    hideTitle: true,
     rows: [
       { name: railLabel,                   unit: 'шт', qty: railQty, key: 'rail' },
       { name: 'Соединитель универсальный',  unit: 'шт', qty: connQty, key: 'connector' },
@@ -633,10 +634,12 @@ function calcSectionsForIsland(type, railNum, railLabel, mpr, rows) {
 function mergeSections(allSections) {
   const order = [];
   const map = {};
+  const hiddenTitles = {};
   allSections.forEach(sections => {
     sections.forEach(section => {
       if (!map[section.title]) {
         map[section.title] = {};
+        hiddenTitles[section.title] = !!section.hideTitle;
         order.push(section.title);
       }
       section.rows.forEach(item => {
@@ -647,7 +650,7 @@ function mergeSections(allSections) {
       });
     });
   });
-  return order.map(title => ({ title, rows: Object.values(map[title]) }));
+  return order.map(title => ({ title, hideTitle: hiddenTitles[title], rows: Object.values(map[title]) }));
 }
 
 function calculate() {
@@ -686,28 +689,23 @@ function calcLBracket(railSection, mpr, rows) {
     railSection,
     {
       title: 'L-кронштейн 37×40×80',
+      hideTitle: true,
       rows: [
         { name: 'L-кронштейн 37×40×80',              unit: 'шт', qty: lBracketQty,  key: 'l_bracket' },
-        { name: 'Т-болт М8×20 28/15',                 unit: 'шт', qty: lBracketQty,  key: 't_bolt' },
-        { name: 'Гайка М8 DIN6923 А2',                unit: 'шт', qty: lBracketQty,  key: 'nut_m8' },
-        { name: 'Саморез 6,3×80 DIN7976 (A2)',        unit: 'шт', qty: lBracketQty,  key: 'screw_63' },
-        { name: 'Уплотнитель для L-кронштейна 37×40×2', unit: 'шт', qty: lBracketQty, key: 'seal_l' },
       ],
     },
     {
       title: 'Прижим концевой',
+      hideTitle: true,
       rows: [
         { name: 'Прижим концевой 35',             unit: 'шт', qty: endClampQty, key: 'end_clamp' },
-        { name: 'Защёлка прижима',                unit: 'шт', qty: endClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: endClampQty, key: 'bolt_m6' },
       ],
     },
     {
       title: 'Прижим средний',
+      hideTitle: true,
       rows: [
         { name: 'Прижим средний',                 unit: 'шт', qty: midClampQty, key: 'mid_clamp' },
-        { name: 'Защёлка прижима',                unit: 'шт', qty: midClampQty, key: 'clip' },
-        { name: 'Винт прижима DIN933 М6×40 А2',   unit: 'шт', qty: midClampQty, key: 'bolt_m6' },
       ],
     },
   ];
@@ -843,11 +841,13 @@ function renderResults(sections, meta) {
   let runningTotal = 0;
 
   sections.forEach(section => {
-    // Section header row
-    const sRow = document.createElement('tr');
-    sRow.className = 'section-row';
-    sRow.innerHTML = `<td colspan="4">${section.title}</td>`;
-    tbody.appendChild(sRow);
+    if (!section.hideTitle) {
+      // Section header row
+      const sRow = document.createElement('tr');
+      sRow.className = 'section-row';
+      sRow.innerHTML = `<td colspan="4">${section.title}</td>`;
+      tbody.appendChild(sRow);
+    }
 
     section.rows.forEach(item => {
       const unitPrice = prices[item.key] || 0;
