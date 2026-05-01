@@ -315,12 +315,17 @@
     }
     .btn-remove-island:hover { background: #fee2e2; color: var(--error); }
     .island-hint {
-      display: inline-block;
-      margin-top: 7px;
-      font-size: 0.75rem;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
       color: var(--text-muted);
     }
-    .island-hint strong { color: var(--primary); }
+    .island-hint .hint-sub {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
     .btn-add-island {
       width: 100%;
       padding: 8px;
@@ -534,8 +539,7 @@ function updateIslandHint(idx) {
   const { rows, mpr, count } = islands[idx];
   const perIsland = rows * mpr;
   const total = perIsland * count;
-  el.innerHTML = `${rows} × ${mpr} = <strong>${perIsland} модулей</strong> в поле` +
-    (count > 1 ? ` × ${count} = <strong>${total} шт</strong>` : '');
+  el.innerHTML = `Всего модулей в поле: <strong>${total}</strong>`;
 }
 
 function renderIslands() {
