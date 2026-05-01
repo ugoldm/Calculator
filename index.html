@@ -225,17 +225,6 @@
       padding: 12px !important;
     }
 
-    .price-input {
-      width: 90px;
-      text-align: right;
-      padding: 4px 7px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
-      font-size: 0.82rem;
-      background: white;
-    }
-    .price-input:focus { outline: none; border-color: var(--primary-light); }
-
     .unit-badge {
       display: inline-block;
       background: #e0e7ff;
@@ -509,7 +498,7 @@ const PRICES = {
   'nut_fl_rear':         40,
 };
 
-// Текущие цены (могут меняться пользователем)
+// Текущие цены
 let prices = { ...PRICES };
 
 // ─────────────────────────────────────────
@@ -599,7 +588,7 @@ function formatNum(n) {
   return Math.round(n).toLocaleString('ru-RU');
 }
 function formatMoney(n) {
-  return formatNum(n) + ' ₽';
+  return formatNum(n) + ' UZS';
 }
 
 // ─────────────────────────────────────────
@@ -860,11 +849,7 @@ function renderResults(sections, meta) {
       tr.innerHTML = `
         <td>${item.name}</td>
         <td>${item.qty} шт</td>
-        <td style="white-space:nowrap">
-          <input class="price-input" type="number" value="${unitPrice}" min="0"
-            onchange="updatePrice('${item.key}', this.value, this.closest('tr'))"
-          /> ₽
-        </td>
+        <td style="white-space:nowrap">${formatMoney(unitPrice)}</td>
         <td class="amount row-amount">${formatMoney(amount)}</td>
       `;
       tbody.appendChild(tr);
@@ -881,31 +866,6 @@ function renderResults(sections, meta) {
     <td id="grandTotalCell">${formatMoney(runningTotal)}</td>
   `;
   tbody.appendChild(totalRow);
-}
-
-function updatePrice(key, newVal, tr) {
-  prices[key] = parseFloat(newVal) || 0;
-  const qty = parseInt(tr.dataset.qty) || 0;
-  const amount = prices[key] * qty;
-  tr.querySelector('.row-amount').textContent = formatMoney(amount);
-  recalcTotal();
-}
-
-function recalcTotal() {
-  let total = 0;
-  document.querySelectorAll('#estimateBody tr[data-key]').forEach(tr => {
-    const qty  = parseInt(tr.dataset.qty) || 0;
-    const key  = tr.dataset.key;
-    total += (prices[key] || 0) * qty;
-  });
-  const cell = document.getElementById('grandTotalCell');
-  if (cell) cell.textContent = formatMoney(total);
-
-  // Update summary bar total
-  const summaryVals = document.querySelectorAll('.summary-item .s-value');
-  if (summaryVals.length >= 3) {
-    summaryVals[2].textContent = formatMoney(total);
-  }
 }
 
 // Init
