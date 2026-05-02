@@ -245,6 +245,12 @@
       #resultsContent.results-ready .results-actions button {
         flex: 1;
       }
+      .summary-total {
+        grid-column: span 2;
+      }
+      .summary-total .s-value {
+        white-space: nowrap;
+      }
       .estimate-table-wrap { overflow-x: visible; }
       .estimate-table {
         min-width: 0;
@@ -868,7 +874,7 @@ function renderResults(sections, meta) {
       <div class="s-label">Модулей</div>
       <div class="s-value">${meta.totalModules} шт</div>
     </div>
-    <div class="summary-item">
+    <div class="summary-item summary-total">
       <div class="s-label">Итого</div>
       <div class="s-value" style="color:var(--success)">${formatMoney(grandTotal)}</div>
     </div>
