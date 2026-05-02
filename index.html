@@ -230,6 +230,61 @@
       padding: 12px !important;
     }
 
+    @media (max-width: 640px) {
+      .estimate-table-wrap { overflow-x: visible; }
+      .estimate-table {
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+      }
+      .estimate-table thead { display: none; }
+      .estimate-table tbody,
+      .estimate-table tr,
+      .estimate-table td { display: block; }
+      .estimate-table tbody tr {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .estimate-table tbody tr:hover { background: var(--surface); }
+      .estimate-table tbody td {
+        padding: 0;
+        border: 0;
+      }
+      .estimate-table tbody td:nth-child(1) {
+        padding-right: 96px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+      .estimate-table tbody td:nth-child(2),
+      .estimate-table tbody td:nth-child(3) {
+        display: inline;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-align: left;
+      }
+      .estimate-table tbody td:nth-child(2)::after {
+        content: ' × ';
+      }
+      .estimate-table tbody td:nth-child(4) {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        max-width: 92px;
+        text-align: right;
+        font-weight: 800;
+        color: var(--primary);
+        white-space: nowrap;
+      }
+      .total-row td:nth-child(1) {
+        padding-right: 96px !important;
+      }
+      .total-row td:nth-child(2),
+      .total-row td:nth-child(3) { display: none; }
+    }
+
     .unit-badge {
       display: inline-block;
       background: #e0e7ff;
@@ -814,7 +869,8 @@ function renderResults(sections, meta) {
   totalRow.className = 'total-row';
   totalRow.id = 'totalRow';
   totalRow.innerHTML = `
-    <td colspan="2">Итого</td>
+    <td>Итого</td>
+    <td></td>
     <td></td>
     <td id="grandTotalCell">${formatMoney(runningTotal)}</td>
   `;
