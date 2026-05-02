@@ -231,6 +231,20 @@
     }
 
     @media (max-width: 640px) {
+      #resultsContent.results-ready {
+        display: flex !important;
+        flex-direction: column;
+      }
+      #resultsContent.results-ready .summary-bar { order: 1; }
+      #resultsContent.results-ready .estimate-table-wrap { order: 2; }
+      #resultsContent.results-ready .results-actions {
+        order: 3;
+        justify-content: stretch;
+        margin: 14px 0 0;
+      }
+      #resultsContent.results-ready .results-actions button {
+        flex: 1;
+      }
       .estimate-table-wrap { overflow-x: visible; }
       .estimate-table {
         min-width: 0;
@@ -246,8 +260,10 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 10px;
+        margin-bottom: 10px;
         padding: 10px 12px;
       }
+      .estimate-table tbody tr:last-child { margin-bottom: 0; }
       .estimate-table tbody tr:hover { background: var(--surface); }
       .estimate-table tbody td {
         padding: 0;
@@ -831,7 +847,9 @@ function calcMiniRail(mpr, rows) {
 function renderResults(sections, meta) {
   currentEstimate = { sections, meta };
   document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('resultsContent').style.display = 'block';
+  const resultsContent = document.getElementById('resultsContent');
+  resultsContent.style.display = 'block';
+  resultsContent.classList.add('results-ready');
 
   // Summary bar
   let grandTotal = 0;
