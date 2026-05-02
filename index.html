@@ -278,11 +278,24 @@
         color: var(--primary);
         white-space: nowrap;
       }
-      .total-row td:nth-child(1) {
-        padding-right: 96px !important;
+      .estimate-table tbody .total-row {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
       }
-      .total-row td:nth-child(2),
-      .total-row td:nth-child(3) { display: none; }
+      .estimate-table tbody .total-row td {
+        background: transparent !important;
+        color: white !important;
+        padding: 0 !important;
+      }
+      .estimate-table tbody .total-row td:nth-child(1) { padding-right: 180px !important; }
+      .estimate-table tbody .total-row td:nth-child(2),
+      .estimate-table tbody .total-row td:nth-child(3) { display: none; }
+      .estimate-table tbody .total-row td:nth-child(2)::after { content: none; }
+      .estimate-table tbody .total-row td:nth-child(4) {
+        right: 16px;
+        max-width: calc(100% - 120px);
+        color: white !important;
+      }
     }
 
     .unit-badge {
