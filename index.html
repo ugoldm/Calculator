@@ -454,6 +454,14 @@
         </select>
       </div>
 
+      <div class="form-group">
+        <label>Валюта расчёта</label>
+        <select id="currencySelect" onchange="onCurrencyChange()">
+          <option value="UZS">Сумы (UZS)</option>
+          <option value="RUB">Рубли (RUB)</option>
+        </select>
+      </div>
+
       <div id="systemParamsBlock">
         <div class="form-divider"></div>
         <div class="section-label">Параметры системы</div>
@@ -562,23 +570,38 @@
 // ─────────────────────────────────────────
 const DEFAULT_PRICES = {
   // Общие
-  'rail_2400':         116400,
-  'rail_3500':         169700,
-  'connector':          3900,
-  'end_clamp':          10200,
-  'mid_clamp':          9300,
+  'rail_2400':  { UZS: 116400, RUB: 1800 },
+  'rail_3500':  { UZS: 169700, RUB: 1800 },
+  'connector':  { UZS: 3900, RUB: 220 },
+  'end_clamp':  { UZS: 10200, RUB: 195 },
+  'mid_clamp':  { UZS: 9300, RUB: 175 },
 
   // L-кронштейн
-  'l_bracket':          47800,
+  'l_bracket':  { UZS: 47800, RUB: 280 },
 
   // Рег. угол
-  'front_stand':        38100,
-  'rear_stand':         96900,
+  'front_stand': { UZS: 38100, RUB: 320 },
+  'rear_stand':  { UZS: 96900, RUB: 320 },
 
   // Мини-рельс
-  'mini_rail':          40600,
+  'mini_rail':  { UZS: 40600, RUB: 950 },
 };
-const PRICES = { ...DEFAULT_PRICES, ...(window.PRICES || {}) };
+function normalizePriceValue(value) {
+  return typeof value === 'number' ? { UZS: value, RUB: value } : value;
+}
+
+function mergePriceConfigs(defaultPrices, customPrices) {
+  const merged = {};
+  Object.keys(defaultPrices).forEach(key => {
+    merged[key] = { ...normalizePriceValue(defaultPrices[key]) };
+    if (customPrices[key] !== undefined) {
+      merged[key] = { ...merged[key], ...normalizePriceValue(customPrices[key]) };
+    }
+  });
+  return merged;
+}
+
+const PRICES = mergePriceConfigs(DEFAULT_PRICES, window.PRICES || {});
 
 // Текущие цены
 let prices = { ...PRICES };
@@ -650,6 +673,12 @@ function onSystemTypeChange() {
   document.getElementById('systemParamsBlock').style.display = isMini ? 'none' : '';
 }
 
+function onCurrencyChange() {
+  if (currentEstimate) {
+    renderResults(currentEstimate.sections, currentEstimate.meta);
+  }
+}
+
 function updateTotalModules() {
   const total = islands.reduce((sum, { rows, mpr, count }) => sum + rows * mpr * count, 0);
   document.getElementById('totalModulesDisplay').value = total + ' шт';
@@ -658,8 +687,14 @@ function updateTotalModules() {
 function formatNum(n) {
   return Math.round(n).toLocaleString('ru-RU');
 }
-function formatMoney(n) {
-  return formatNum(n) + ' UZS';
+function getCurrency() {
+  return document.getElementById('currencySelect').value;
+}
+function getPrice(key) {
+  return prices[key]?.[getCurrency()] || 0;
+}
+function formatMoney(n, currency = getCurrency()) {
+  return formatNum(n) + ' ' + currency;
 }
 
 // ─────────────────────────────────────────
@@ -863,7 +898,7 @@ function renderResults(sections, meta) {
 
   // Summary bar
   let grandTotal = 0;
-  sections.forEach(s => s.rows.forEach(r => { grandTotal += (prices[r.key] || 0) * r.qty; }));
+  sections.forEach(s => s.rows.forEach(r => { grandTotal += getPrice(r.key) * r.qty; }));
 
   document.getElementById('summaryBar').innerHTML = `
     <div class="summary-item">
@@ -896,7 +931,7 @@ function renderResults(sections, meta) {
     }
 
     section.rows.forEach(item => {
-      const unitPrice = prices[item.key] || 0;
+      const unitPrice = getPrice(item.key);
       const amount    = unitPrice * item.qty;
       runningTotal   += amount;
 
@@ -937,13 +972,13 @@ function exportEstimateXlsx() {
   }
 
   const rows = [
-    ['Наименование', 'Кол-во', 'Цена за ед., UZS', 'Сумма, UZS'],
+    ['Наименование', 'Кол-во', `Цена за ед., ${getCurrency()}`, `Сумма, ${getCurrency()}`],
   ];
   let total = 0;
 
   currentEstimate.sections.forEach(section => {
     section.rows.forEach(item => {
-      const unitPrice = prices[item.key] || 0;
+      const unitPrice = getPrice(item.key);
       const amount = unitPrice * item.qty;
       total += amount;
       rows.push([item.name, item.qty, unitPrice, amount]);
