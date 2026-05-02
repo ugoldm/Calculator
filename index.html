@@ -312,7 +312,8 @@
     .amount { font-weight: 700; color: var(--success); }
 
     /* Print */
-    .btn-print {
+    .btn-print,
+    .btn-export {
       padding: 8px 18px;
       background: var(--surface2);
       border: 1.5px solid var(--border);
@@ -323,7 +324,8 @@
       color: var(--text);
       transition: background 0.15s;
     }
-    .btn-print:hover { background: var(--border); }
+    .btn-print:hover,
+    .btn-export:hover { background: var(--border); }
 
     .results-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px; }
 
@@ -494,6 +496,9 @@
       <div id="resultsContent" style="display:none">
 
         <div class="results-actions">
+          <button class="btn-export" onclick="exportEstimateXlsx()">
+            Excel
+          </button>
           <button class="btn-print" onclick="window.print()">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="display:inline;vertical-align:-2px;margin-right:5px"><path d="M3 4V1h8v3M3 10H1V5h12v5h-2M3 8h8v5H3V8z" stroke="currentColor" stroke-width="1.2"/></svg>
             Печать
@@ -523,6 +528,7 @@
 
 </div>
 
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="prices.js"></script>
 <script>
 // ─────────────────────────────────────────
@@ -555,6 +561,7 @@ let prices = { ...PRICES };
 // Islands state
 // ─────────────────────────────────────────
 let islands = [{ rows: 2, mpr: 4, count: 1 }];
+let currentEstimate = null;
 
 function addIsland() {
   islands.push({ rows: 2, mpr: 4, count: 1 });
@@ -822,6 +829,7 @@ function calcMiniRail(mpr, rows) {
 // Рендер
 // ─────────────────────────────────────────
 function renderResults(sections, meta) {
+  currentEstimate = { sections, meta };
   document.getElementById('placeholder').style.display = 'none';
   document.getElementById('resultsContent').style.display = 'block';
 
@@ -888,6 +896,44 @@ function renderResults(sections, meta) {
     <td id="grandTotalCell">${formatMoney(runningTotal)}</td>
   `;
   tbody.appendChild(totalRow);
+}
+
+function exportEstimateXlsx() {
+  if (!currentEstimate) {
+    alert('Сначала рассчитайте смету.');
+    return;
+  }
+  if (!window.XLSX) {
+    alert('Не удалось загрузить библиотеку экспорта Excel. Проверьте подключение к интернету и обновите страницу.');
+    return;
+  }
+
+  const rows = [
+    ['Наименование', 'Кол-во', 'Цена за ед., UZS', 'Сумма, UZS'],
+  ];
+  let total = 0;
+
+  currentEstimate.sections.forEach(section => {
+    section.rows.forEach(item => {
+      const unitPrice = prices[item.key] || 0;
+      const amount = unitPrice * item.qty;
+      total += amount;
+      rows.push([item.name, item.qty, unitPrice, amount]);
+    });
+  });
+  rows.push(['Итого', '', '', total]);
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  worksheet['!cols'] = [
+    { wch: 36 },
+    { wch: 10 },
+    { wch: 18 },
+    { wch: 18 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Смета');
+  XLSX.writeFile(workbook, 'cost_estimate.xlsx');
 }
 
 // Init
