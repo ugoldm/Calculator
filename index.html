@@ -183,7 +183,12 @@
     .summary-item .s-value { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: 2px; }
 
     /* Table */
-    .estimate-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .estimate-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .estimate-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.85rem; }
     .estimate-table thead th {
       background: var(--primary);
       color: white;
@@ -429,17 +434,19 @@
 
         <div class="summary-bar" id="summaryBar"></div>
 
-        <table class="estimate-table" id="estimateTable">
-          <thead>
-            <tr>
-              <th>Наименование</th>
-              <th>Кол-во</th>
-              <th>Цена за ед.</th>
-              <th>Сумма</th>
-            </tr>
-          </thead>
-          <tbody id="estimateBody"></tbody>
-        </table>
+        <div class="estimate-table-wrap">
+          <table class="estimate-table" id="estimateTable">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Кол-во</th>
+                <th>Цена за ед.</th>
+                <th>Сумма</th>
+              </tr>
+            </thead>
+            <tbody id="estimateBody"></tbody>
+          </table>
+        </div>
 
       </div>
 
