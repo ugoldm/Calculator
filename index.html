@@ -106,12 +106,6 @@
     select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
     select:focus, input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(42,82,152,0.1); }
     input[readonly] { background: var(--surface2); color: var(--text-muted); cursor: default; }
-    .helper-text {
-      margin-top: 6px;
-      color: var(--text-muted);
-      font-size: 0.76rem;
-      line-height: 1.35;
-    }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -466,7 +460,6 @@
           <option value="UZS">Сумы (UZS)</option>
           <option value="RUB">Рубли (RUB)</option>
         </select>
-        <div class="helper-text" id="exchangeRateStatus">Курс загружается...</div>
       </div>
 
       <div id="systemParamsBlock">
@@ -577,32 +570,32 @@
 // ─────────────────────────────────────────
 const DEFAULT_PRICES = {
   // Общие
-  'rail_2400': 116400,
-  'rail_3500': 169700,
-  'connector': 3900,
-  'end_clamp': 10200,
-  'mid_clamp': 9300,
+  'rail_2400':  { UZS: 116400, RUB: 730 },
+  'rail_3500':  { UZS: 169700, RUB: 1064 },
+  'connector':  { UZS: 3900, RUB: 24 },
+  'end_clamp':  { UZS: 10200, RUB: 64 },
+  'mid_clamp':  { UZS: 9300, RUB: 58 },
 
   // L-кронштейн
-  'l_bracket': 47800,
+  'l_bracket':  { UZS: 47800, RUB: 300 },
 
   // Рег. угол
-  'front_stand': 38100,
-  'rear_stand': 96900,
+  'front_stand': { UZS: 38100, RUB: 239 },
+  'rear_stand':  { UZS: 96900, RUB: 608 },
 
   // Мини-рельс
-  'mini_rail': 40600,
+  'mini_rail':  { UZS: 40600, RUB: 255 },
 };
 function normalizePriceValue(value) {
-  return typeof value === 'number' ? value : value?.UZS || 0;
+  return typeof value === 'number' ? { UZS: value, RUB: value } : value;
 }
 
 function mergePriceConfigs(defaultPrices, customPrices) {
   const merged = {};
   Object.keys(defaultPrices).forEach(key => {
-    merged[key] = normalizePriceValue(defaultPrices[key]);
+    merged[key] = { ...normalizePriceValue(defaultPrices[key]) };
     if (customPrices[key] !== undefined) {
-      merged[key] = normalizePriceValue(customPrices[key]);
+      merged[key] = { ...merged[key], ...normalizePriceValue(customPrices[key]) };
     }
   });
   return merged;
@@ -612,17 +605,6 @@ const PRICES = mergePriceConfigs(DEFAULT_PRICES, window.PRICES || {});
 
 // Текущие цены
 let prices = { ...PRICES };
-
-// Курс ЦБ РФ: резерв используется, если внешний API недоступен.
-const FALLBACK_UZS_NOMINAL = 10000;
-const FALLBACK_UZS_RUB_RATE = 65;
-let exchangeRate = {
-  nominal: FALLBACK_UZS_NOMINAL,
-  rubValue: FALLBACK_UZS_RUB_RATE,
-  rubPerUzs: FALLBACK_UZS_RUB_RATE / FALLBACK_UZS_NOMINAL,
-  source: 'fallback',
-  date: null,
-};
 
 // ─────────────────────────────────────────
 // Islands state
@@ -697,52 +679,6 @@ function onCurrencyChange() {
   }
 }
 
-function updateExchangeRateStatus() {
-  const el = document.getElementById('exchangeRateStatus');
-  if (!el) return;
-
-  const value = exchangeRate.rubValue.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  });
-  const sourceLabel = exchangeRate.source === 'cbr' ? 'курс ЦБ РФ' : 'резервный курс';
-  const dateLabel = exchangeRate.date ? ` на ${new Date(exchangeRate.date).toLocaleDateString('ru-RU')}` : '';
-  el.textContent = `Курс: ${formatNum(exchangeRate.nominal)} UZS = ${value} RUB (${sourceLabel}${dateLabel})`;
-}
-
-async function loadExchangeRate() {
-  updateExchangeRateStatus();
-  try {
-    const response = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Exchange rate request failed');
-
-    const data = await response.json();
-    const uzs = data?.Valute?.UZS;
-    if (!uzs?.Nominal || !uzs?.Value) throw new Error('UZS rate is missing');
-
-    exchangeRate = {
-      nominal: uzs.Nominal,
-      rubValue: uzs.Value,
-      rubPerUzs: uzs.Value / uzs.Nominal,
-      source: 'cbr',
-      date: data.Date || null,
-    };
-  } catch (error) {
-    exchangeRate = {
-      nominal: FALLBACK_UZS_NOMINAL,
-      rubValue: FALLBACK_UZS_RUB_RATE,
-      rubPerUzs: FALLBACK_UZS_RUB_RATE / FALLBACK_UZS_NOMINAL,
-      source: 'fallback',
-      date: null,
-    };
-  }
-
-  updateExchangeRateStatus();
-  if (currentEstimate && getCurrency() === 'RUB') {
-    renderResults(currentEstimate.sections, currentEstimate.meta);
-  }
-}
-
 function updateTotalModules() {
   const total = islands.reduce((sum, { rows, mpr, count }) => sum + rows * mpr * count, 0);
   document.getElementById('totalModulesDisplay').value = total + ' шт';
@@ -755,8 +691,7 @@ function getCurrency() {
   return document.getElementById('currencySelect').value;
 }
 function getPrice(key) {
-  const priceUzs = prices[key] || 0;
-  return getCurrency() === 'RUB' ? Math.round(priceUzs * exchangeRate.rubPerUzs) : priceUzs;
+  return prices[key]?.[getCurrency()] || 0;
 }
 function formatMoney(n, currency = getCurrency()) {
   return formatNum(n) + ' ' + currency;
@@ -1065,7 +1000,6 @@ function exportEstimateXlsx() {
 }
 
 // Init
-loadExchangeRate();
 renderIslands();
 </script>
 </body>
