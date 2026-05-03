@@ -357,6 +357,62 @@
       .card { box-shadow: none; border: none; }
     }
 
+    /* Country switcher */
+    .country-switcher-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .country-switcher-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .country-switcher-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .country-switcher {
+      display: inline-flex;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .country-btn {
+      padding: 7px 20px;
+      background: var(--surface);
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .country-btn + .country-btn {
+      border-left: 1.5px solid var(--border);
+    }
+    .country-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    .country-btn:hover:not(.active) {
+      background: var(--surface2);
+      color: var(--primary);
+    }
+
+    /* Russia mode: hide price columns */
+    body.mode-ru .price-col { display: none !important; }
+    body.mode-ru .total-row { display: none !important; }
+    body.mode-ru .estimate-table { min-width: 0; }
+    body.mode-ru .estimate-table tbody td:nth-child(2)::after { content: none !important; }
+
     /* divider */
     .form-divider { height: 1px; background: var(--border); margin: 18px 0; }
     .section-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -431,6 +487,16 @@
   </div>
 </header>
 
+<div class="country-switcher-bar">
+  <div class="country-switcher-inner">
+    <span class="country-switcher-label">Расчёт для:</span>
+    <div class="country-switcher">
+      <button class="country-btn active" data-mode="UZ" onclick="setCountryMode('UZ')">Узбекистан</button>
+      <button class="country-btn" data-mode="RU" onclick="setCountryMode('RU')">Россия</button>
+    </div>
+  </div>
+</div>
+
 <div class="layout">
 
   <!-- ── ФОРМА ── -->
@@ -454,7 +520,7 @@
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group price-col">
         <label>Валюта расчёта</label>
         <select id="currencySelect" onchange="onCurrencyChange()">
           <option value="UZS">Сумы (UZS)</option>
@@ -547,8 +613,8 @@
               <tr>
                 <th>Наименование</th>
                 <th>Кол-во</th>
-                <th>Цена за ед.</th>
-                <th>Сумма</th>
+                <th class="price-col">Цена за ед.</th>
+                <th class="price-col">Сумма</th>
               </tr>
             </thead>
             <tbody id="estimateBody"></tbody>
@@ -605,6 +671,20 @@ const PRICES = mergePriceConfigs(DEFAULT_PRICES, window.PRICES || {});
 
 // Текущие цены
 let prices = { ...PRICES };
+
+// ─────────────────────────────────────────
+// Country mode
+// ─────────────────────────────────────────
+let countryMode = 'UZ';
+
+function setCountryMode(mode) {
+  countryMode = mode;
+  document.body.classList.toggle('mode-ru', mode === 'RU');
+  document.querySelectorAll('.country-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  if (currentEstimate) renderResults(currentEstimate.sections, currentEstimate.meta);
+}
 
 // ─────────────────────────────────────────
 // Islands state
@@ -900,6 +980,13 @@ function renderResults(sections, meta) {
   let grandTotal = 0;
   sections.forEach(s => s.rows.forEach(r => { grandTotal += getPrice(r.key) * r.qty; }));
 
+  const totalSummaryHtml = countryMode === 'RU' ? '' : `
+    <div class="summary-item summary-total">
+      <div class="s-label">Итого</div>
+      <div class="s-value" style="color:var(--success)">${formatMoney(grandTotal)}</div>
+    </div>
+  `;
+
   document.getElementById('summaryBar').innerHTML = `
     <div class="summary-item">
       <div class="s-label">Тип системы</div>
@@ -909,10 +996,7 @@ function renderResults(sections, meta) {
       <div class="s-label">Модулей</div>
       <div class="s-value">${meta.totalModules} шт</div>
     </div>
-    <div class="summary-item summary-total">
-      <div class="s-label">Итого</div>
-      <div class="s-value" style="color:var(--success)">${formatMoney(grandTotal)}</div>
-    </div>
+    ${totalSummaryHtml}
   `;
 
   // Table body
@@ -941,8 +1025,8 @@ function renderResults(sections, meta) {
       tr.innerHTML = `
         <td>${item.name}</td>
         <td>${item.qty} шт</td>
-        <td style="white-space:nowrap">${formatMoney(unitPrice)}</td>
-        <td class="amount row-amount">${formatMoney(amount)}</td>
+        <td class="price-col" style="white-space:nowrap">${formatMoney(unitPrice)}</td>
+        <td class="price-col amount row-amount">${formatMoney(amount)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -971,28 +1055,32 @@ function exportEstimateXlsx() {
     return;
   }
 
-  const rows = [
-    ['Наименование', 'Кол-во', `Цена за ед., ${getCurrency()}`, `Сумма, ${getCurrency()}`],
-  ];
-  let total = 0;
-
-  currentEstimate.sections.forEach(section => {
-    section.rows.forEach(item => {
-      const unitPrice = getPrice(item.key);
-      const amount = unitPrice * item.qty;
-      total += amount;
-      rows.push([item.name, item.qty, unitPrice, amount]);
+  let rows, colWidths;
+  if (countryMode === 'RU') {
+    rows = [['Наименование', 'Кол-во']];
+    currentEstimate.sections.forEach(section => {
+      section.rows.forEach(item => {
+        rows.push([item.name, item.qty]);
+      });
     });
-  });
-  rows.push(['Итого', '', '', total]);
+    colWidths = [{ wch: 36 }, { wch: 10 }];
+  } else {
+    rows = [['Наименование', 'Кол-во', `Цена за ед., ${getCurrency()}`, `Сумма, ${getCurrency()}`]];
+    let total = 0;
+    currentEstimate.sections.forEach(section => {
+      section.rows.forEach(item => {
+        const unitPrice = getPrice(item.key);
+        const amount = unitPrice * item.qty;
+        total += amount;
+        rows.push([item.name, item.qty, unitPrice, amount]);
+      });
+    });
+    rows.push(['Итого', '', '', total]);
+    colWidths = [{ wch: 36 }, { wch: 10 }, { wch: 18 }, { wch: 18 }];
+  }
 
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
-  worksheet['!cols'] = [
-    { wch: 36 },
-    { wch: 10 },
-    { wch: 18 },
-    { wch: 18 },
-  ];
+  worksheet['!cols'] = colWidths;
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Смета');
