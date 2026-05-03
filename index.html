@@ -524,8 +524,9 @@
         <label>Валюта расчёта</label>
         <select id="currencySelect" onchange="onCurrencyChange()">
           <option value="UZS">Сумы (UZS)</option>
-          <option value="RUB">Рубли (RUB)</option>
+          <option value="USD">Доллары США (USD)</option>
         </select>
+        <div id="usdRateInfo" style="display:none; margin-top:6px; font-size:0.78rem; color:var(--text-muted)"></div>
       </div>
 
       <div id="systemParamsBlock">
@@ -673,6 +674,26 @@ const PRICES = mergePriceConfigs(DEFAULT_PRICES, window.PRICES || {});
 let prices = { ...PRICES };
 
 // ─────────────────────────────────────────
+// USD rate (ЦБ Узбекистана)
+// ─────────────────────────────────────────
+let usdRate = null;
+
+async function fetchUsdRate() {
+  const info = document.getElementById('usdRateInfo');
+  try {
+    const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/USD/');
+    const data = await res.json();
+    usdRate = parseFloat(data[0].Rate);
+    const date = data[0].Date;
+    info.textContent = `Курс на ${date}: 1 USD = ${formatNum(usdRate)} UZS`;
+    if (currentEstimate) renderResults(currentEstimate.sections, currentEstimate.meta);
+  } catch {
+    info.textContent = 'Не удалось загрузить курс USD';
+  }
+  info.style.display = '';
+}
+
+// ─────────────────────────────────────────
 // Country mode
 // ─────────────────────────────────────────
 let countryMode = 'UZ';
@@ -754,9 +775,9 @@ function onSystemTypeChange() {
 }
 
 function onCurrencyChange() {
-  if (currentEstimate) {
-    renderResults(currentEstimate.sections, currentEstimate.meta);
-  }
+  const info = document.getElementById('usdRateInfo');
+  info.style.display = getCurrency() === 'USD' ? '' : 'none';
+  if (currentEstimate) renderResults(currentEstimate.sections, currentEstimate.meta);
 }
 
 function updateTotalModules() {
@@ -771,10 +792,17 @@ function getCurrency() {
   return document.getElementById('currencySelect').value;
 }
 function getPrice(key) {
-  return prices[key]?.[getCurrency()] || 0;
+  const currency = getCurrency();
+  if (currency === 'USD') {
+    return usdRate ? (prices[key]?.UZS || 0) / usdRate : 0;
+  }
+  return prices[key]?.UZS || 0;
 }
 function formatMoney(n, currency = getCurrency()) {
-  return formatNum(n) + ' ' + currency;
+  if (currency === 'USD') {
+    return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+  }
+  return formatNum(n) + ' UZS';
 }
 
 // ─────────────────────────────────────────
@@ -1089,6 +1117,7 @@ function exportEstimateXlsx() {
 
 // Init
 renderIslands();
+fetchUsdRate();
 </script>
 </body>
 </html>
